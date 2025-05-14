@@ -1,11 +1,16 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule } from '@nestjs/config';
 import { TasksModule } from './tasks/tasks.module';
+import { dynamoProvider } from './aws/dynamodb.provider';
 
 @Module({
-  imports: [TasksModule],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    TasksModule,
+  ],
+  controllers: [],
+  providers: [dynamoProvider],
 })
 export class AppModule {}

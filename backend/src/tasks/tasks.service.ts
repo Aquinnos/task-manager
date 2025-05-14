@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuid } from 'uuid';
 
 type Task = {
@@ -9,15 +11,31 @@ type Task = {
 
 @Injectable()
 export class TasksService {
-  private tasks: Task[] = [];
+  constructor(
+    @Inject('DYNAMO_CLIENT') private readonly docClient: DynamoDBDocumentClient,
+  ) {}
 
-  getTasks(): Task[] {
-    return this.tasks;
+  async getTasks(): Promise<Task[]> {
+    const result = await this.docClient.send(
+      new ScanCommand({ TableName: process.env.DYNAMO_TABLE }),
+    );
+    return result.Items as Task[];
   }
 
-  createTask(title: string): Task {
-    const newTask = { id: uuid(), title, done: false };
-    this.tasks.push(newTask);
+  async createTask(title: string): Promise<Task> {
+    const newTask: Task = {
+      id: uuid(),
+      title,
+      done: false,
+    };
+
+    await this.docClient.send(
+      new PutCommand({
+        TableName: process.env.DYNAMO_TABLE,
+        Item: newTask,
+      }),
+    );
+
     return newTask;
   }
 }
